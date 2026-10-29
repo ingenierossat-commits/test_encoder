@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ENCODER TEST</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<link rel="apple-touch-icon" href="ICONS/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="ICONS/icon-192.png">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--line:#30363d;--txt:#e6edf3;--dim:#8b949e;--ok:#3fb950;--bad:#f85149;--acc:#58a6ff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:12px;padding-bottom:max(12px,env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+h1{font-size:1.1rem;letter-spacing:.08em}
+#estado{font-size:.8rem;color:var(--dim)}
+button{background:var(--acc);color:#04111f;border:0;border-radius:8px;padding:10px 14px;font-weight:700;font-size:.9rem}
+button.sec{background:var(--card);color:var(--txt);border:1px solid var(--line)}
+button.danger{background:#da3633;color:#fff;width:100%;padding:14px;font-size:1rem;margin-top:10px}
+button:disabled{opacity:.4}
+.seg{display:flex;gap:0;margin-bottom:10px}
+.seg button{flex:1;border-radius:0;background:var(--card);color:var(--dim);border:1px solid var(--line);font-size:1rem;padding:12px}
+.seg button:first-child{border-radius:8px 0 0 8px}
+.seg button:last-child{border-radius:0 8px 8px 0}
+.seg button.act{background:var(--acc);color:#04111f;border-color:var(--acc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.card .l{font-size:.75rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.card .v{font-size:2.4rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15}
+.card.big{grid-column:span 2}
+.card.big .v{font-size:3.6rem}
+.card .n{font-size:.75rem;color:var(--dim)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.cnts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.cnts .card{padding:8px;text-align:center}
+.cnts .v{font-size:1.5rem;word-break:break-all}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.rele{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#rled{width:22px;height:22px;border-radius:50%;background:#3a3a10;border:2px solid #5a5a1a;flex:none}
+#rled.on{background:#ffd028;border-color:#ffe87a;box-shadow:0 0 14px 4px rgba(255,208,40,.7)}
+.rele input{width:90px;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:1.1rem;font-variant-numeric:tabular-nums}
+#warn{display:none;background:#3d1d1d;border:1px solid var(--bad);color:#ffb3ae;border-radius:8px;padding:10px;font-size:.85rem;margin-bottom:10px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>ENCODER TEST</h1><div id="estado">Desconectado</div></div>
+  <button id="btnConn">Conectar</button>
+</header>
+<div id="warn"></div>
+
+<div class="card" style="margin-bottom:10px">
+  <div class="l">Cuenta total desde la última puesta a cero</div>
+  <div class="cnts">
+    <div class="card"><div class="l">A</div><div class="v" id="cntA">0</div></div>
+    <div class="card"><div class="l">B</div><div class="v" id="cntB">0</div></div>
+    <div class="card"><div class="l">A − B</div><div class="v" id="cntD">0</div></div>
+  </div>
+  <div class="grid" style="margin:8px 0 0">
+    <div class="card"><div class="l">Máx |A − B|</div><div class="v" id="maxD" style="font-size:1.8rem">0</div></div>
+    <div class="card"><div class="l">Vueltas (A ÷ 360)</div><div class="v" id="turns" style="font-size:1.8rem">0</div></div>
+  </div>
+  <div class="n" style="margin-top:6px;font-size:.75rem;color:var(--dim)">|A − B| ≤ 1 es normal (B va desfasada 90° respecto a A). Más que eso = pulsos perdidos o fantasma. La cuenta sigue en la placa aunque se desconecte el móvil y solo se pone a cero aquí.</div>
+  <button class="danger" id="btnZero" disabled>PONER A Y B A CERO</button>
+</div>
+
+<div class="seg">
+  <button id="m360" class="act" disabled>RPM con 360 (A x1)</button>
+  <button id="m1440" disabled>RPM con 1440 (x4)</button>
+</div>
+
+<div class="grid">
+  <div class="card big"><div class="l">RPM (ventana 2 s)</div><div class="v" id="rpm">0.00</div><div class="n" id="rpmN">objetivo 4.00</div></div>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+  <div class="l">Relé (impulso de 1 s cada X s · 0 = desactivado)</div>
+  <div class="rele" style="margin-top:8px">
+    <div id="rled"></div>
+    <input id="rint" type="number" min="0" max="65535" step="1" inputmode="numeric" value="0" disabled>
+    <span style="color:var(--dim)">s</span>
+    <button id="btnRele" disabled>Aplicar</button>
+  </div>
+  <div class="n" style="margin-top:6px;font-size:.75rem;color:var(--dim)">Pulsos dados: <b id="rcnt">0</b> · <span id="rstate">desactivado</span></div>
+</div>
+
+<div class="btns">
+  <button class="sec" id="btnFlt" disabled>Filtro glitch: <b id="flt">OFF</b> (cambiarlo pone A y B a cero)</button>
+</div>
+
+<script src="app.js"></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}</script>
+</body>
+</html>
